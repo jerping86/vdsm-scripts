@@ -125,5 +125,5 @@ tar czvf $rpm"v"$version".tar.gz" rpmbuild/RPMS/
 cd $wd
 echo "we are in `pwd`"
 echo "removing vdsm..."
-rm -rf vdsm_gpu
+rm -rf $proj
 echo "we are done..."
