@@ -43,8 +43,10 @@ then
 	vdsm=$vdsm"/"
 fi
 
+read -p "Entering branch prefix: " bpre
+
 cd $vdsm
-git checkout "v"$version -b "tmp"$version
+git checkout "v"$version -b $bpre$version
 cd $wd"/"$proj"/vdsm-"$version 
 
 for((i=0;i<${#arr[@]};i++))
