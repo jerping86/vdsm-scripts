@@ -56,7 +56,7 @@ do
 		[yY]*)
 			cp ${arr[i]} -f $vdsm${loc[i]}
 			echo "ok";;
-		[sS]*)
+		*)
 			echo "skip";;
 	esac 
 done
@@ -72,7 +72,7 @@ do
 		[yY]*)
 			git add ${loc[i]}${arr[i]}
 			echo "ok";;
-		[sS]*)
+		*)
 			echo "skip";;
 	esac 
 done
