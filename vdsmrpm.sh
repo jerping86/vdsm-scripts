@@ -1,18 +1,19 @@
 #!/bin/bash
 
-read -p "Entering working dir:" wd
+read -p "Entering working dir for storing temp stuffs: " wd
 cd $wd
-echo "working dir: `pwd`"
+echo "***Working dir***: `pwd`"
 
-read -p "Entering git repo address:" gitrepo
+read -p "Entering git repo address: " gitrepo
 git clone $gitrepo
 
 proj=${gitrepo##*/}
 cd $proj
+
 ls
-read -p "What version do you work:" version
+read -p "Which version do your work applied on: " version
 cd vdsm-$version
-echo "we are in `pwd`"
+echo "***Currently in: `pwd`"
 
 #b=$(cat position.txt | awk '//{cmd="mv -f "$1" ~/tmp/"$1;system(cmd)}{print $2$1}')
 
@@ -37,21 +38,39 @@ do
 	let i=i+1
 done
 
-read -p "Where is the vdsm:" vdsm
+read -p "Where is the git code repo: " vdsm
 if [[ $vdsm != */ ]]
 then
 	vdsm=$vdsm"/"
 fi
 
-read -p "Entering branch prefix: " bpre
 
 cd $vdsm
-git checkout "v"$version -b $bpre$version
+#just checkout or create branch?
+git branch -a
+read -p "Create or just checkout branch[(c)checkout,(b)create]?: " bran
+case $bran in
+	[cC]*)
+		read -p "Enter branch name to be checkout: " bname
+		if [[ !$bname ]];
+		then
+			echo "*****using current branch********"
+		else
+			git checkout $bname
+		fi
+		;;
+	[bB]*)
+		read -p "Entering branch prefix: " bpre
+		git checkout "v"$version -b $bpre$version
+		;;
+esac
+
+
 cd $wd"/"$proj"/vdsm-"$version 
 
 for((i=0;i<${#arr[@]};i++))
 do
-	read -p "cp ${arr[i]} to $vdsm${loc[i]}?:" action
+	read -p "cp ${arr[i]} to $vdsm${loc[i]}?[(y)apply,()skip]:" action
 	case $action in
 		[yY]*)
 			cp ${arr[i]} -f $vdsm${loc[i]}
@@ -62,12 +81,12 @@ do
 done
 
 cd $vdsm
-echo "we are in `pwd`"
+echo "***Currently in: `pwd`"
 git status
 
 for((i=0;i<${#arr[@]};i++))
 do
-	read -p "git add ${loc[i]}${arr[i]}? " action
+	read -p "git add ${loc[i]}${arr[i]}?[(y)apply,()skip] " action
 	case $action in
 		[yY]*)
 			git add ${loc[i]}${arr[i]}
@@ -77,22 +96,22 @@ do
 	esac 
 done
 
-read -p "commit changes?:" commit
+read -p "Commit changes?[(y)apply,()skip]: " commit
 
 case $commit in
 	[yY]*)
 		echo "ok";;
-	[sS]*)
+	*)
 		echo "exit"
 		exit;;
 esac
 
-read -p "commit messages: " cmtmsg
+read -p "commit messages[one word]: " cmtmsg
 git commit -m $cmtmsg
 
 while true
 do
-	read -p "add git ver number? " gitnum
+	read -p "Add git ver number?[(y)apply,()skip]: " gitnum
 	case $gitnum in
 		[yY]*)
 			echo "hello,world" >> rpmmake.txt
@@ -103,7 +122,6 @@ do
 	esac
 done
 
-read -p "confirm git commit: " dummy
 git clean -xfd
 ./autogen.sh --system
 make
@@ -115,7 +133,7 @@ git checkout master
 #git branch -D "tmp"$version 
 
 cd /root
-read -p "where to put .tar.gz?: " rpm
+read -p "Where to put .tar.gz?: " rpm
 if [[ $rpm != */ ]]
 then
 	rpm=$rpm"/"
