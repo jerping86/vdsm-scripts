@@ -196,12 +196,16 @@ do
 	esac
 done
 
-git clean -xfd
-./autogen.sh --system
-make
+make_rpm(){
+	git clean -xfd
+	./autogen.sh --system
+	make
 
-rm -rf /root/rpmbuild/RPMS/*/vdsm*.rpm
-make rpm
+	rm -rf /root/rpmbuild/RPMS/*/vdsm*.rpm
+	make rpm
+}
+
+make_rpm
 
 rm -f build-aux/config.guess
 rm -f build-aux/config.sub
