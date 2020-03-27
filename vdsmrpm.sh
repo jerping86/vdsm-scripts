@@ -1,9 +1,10 @@
 #!/bin/bash
 
 end_with_slash(){
+	dummy=$1
 	if [[ $1 != */ ]]
 	then
-		dummy=$1"/"
+		dummy=$dummy"/"
 	fi
 	echo $dummy
 }
@@ -44,14 +45,14 @@ done
 i=0
 for var in ${file_location[@]}
 do
-	loc[i]=$var
-	loc[i]=$(end_with_slash ${loc[i]})
+	loc[i]=$(end_with_slash $var)
+	echo ${loc[i]}
 	let i=i+1
 done
 
 read -p "Where is the main code repo: " vdsm
 vdsm=$(end_with_slash $vdsm)
-
+echo $vdsm
 
 cd $vdsm
 
