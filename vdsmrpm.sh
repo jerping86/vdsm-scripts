@@ -1,5 +1,12 @@
 #!/bin/bash
 
+end_with_slash(){
+	if [[ $1 != */ ]]
+	then
+		dummy=$1"/"
+	fi
+	echo $dummy
+}
 
 read -p "Entering working dir for storing temp stuffs: " wd
 while [ ! -d $wd ]
@@ -9,10 +16,7 @@ done
 
 cd $wd
 echo "***Working dir***: `pwd`"
-if [[ $wd != */ ]]
-then
-	wd=$wd"/"
-fi
+wd=$(end_with_slash $wd)
 
 
 read -p "Entering git repo address: " gitrepo
@@ -41,18 +45,12 @@ i=0
 for var in ${file_location[@]}
 do
 	loc[i]=$var
-	if [[ ${loc[i]} != */ ]]
-	then
-		loc[i]=${loc[i]}"/"
-	fi
+	loc[i]=$(end_with_slash ${loc[i]})
 	let i=i+1
 done
 
 read -p "Where is the main code repo: " vdsm
-if [[ $vdsm != */ ]]
-then
-	vdsm=$vdsm"/"
-fi
+vdsm=$(end_with_slash $vdsm)
 
 
 cd $vdsm
@@ -89,6 +87,7 @@ esac
 
 cd $wd$proj"/vdsm-"$version 
 mkdir bak
+makechanges="no"
 for((i=0;i<${#arr[@]};i++))
 do
 	read -p "cp ${arr[i]} to $vdsm${loc[i]}?[(y)apply,()skip]:" action
@@ -102,6 +101,7 @@ do
 				echo ${arr[i]}"   "$vdsm${loc[i]}"   d" >> bak/position.txt
 			fi
 			cp ${arr[i]} -f $vdsm${loc[i]}
+			makechanges="yes"
 			echo "ok";;
 		*)
 			echo "skip";;
@@ -119,47 +119,47 @@ case $commit in
 		git add .
 		echo "ok";;
 	[rR]*)
-		cd $wd$proj"/vdsm-"$version"/bak/"
-		file_changed=$(cat position.txt | awk '//{print $1}')
-		file_locs=$(cat position.txt | awk '//{print $2}')
-		file_act=$(cat position.txt | awk '//{print $3}')
-		i=0
-		for var in ${file_changed[@]}
-		do
-			ano[i]=$var
-			let i=i+1
-		done
+		if [ $makechanges == "yes" ]
+		then
+			cd $wd$proj"/vdsm-"$version"/bak/"
+			file_changed=$(cat position.txt | awk '//{print $1}')
+			file_locs=$(cat position.txt | awk '//{print $2}')
+			file_act=$(cat position.txt | awk '//{print $3}')
+			i=0
+			for var in ${file_changed[@]}
+			do
+				ano[i]=$var
+				let i=i+1
+			done
 
-		i=0
-		for var in ${file_locs[@]}
-		do
-			floc[i]=$var
-			if [[ $var != */ ]]
-			then
-				floc[i]=$var"/"
-			fi
-			let i=i+1
-		done
-		
-		i=0
-		for var in ${file_act[@]}
-		do
-			fact[i]=$var
-			let i=i+1
-		done
-		
-		for((i=0;i<${#ano[@]};i++))
-		do
-			if [ ${fact[i]} == "c" ]
-			then
-				echo "*****restore file: "${ano[i]}" in "${floc[i]}
-				cp ${ano[i]} -f ${floc[i]}
-			else
-				echo "*****delete file: "${ano[i]}" in "${floc[i]}
-				rm -f ${floc[i]}${ano[i]}
-			fi
-		done
-		
+			i=0
+			for var in ${file_locs[@]}
+			do
+				floc[i]=$var
+				floc[i]=$(end_with_slash ${floc[i]})
+				let i=i+1
+			done
+			
+			i=0
+			for var in ${file_act[@]}
+			do
+				fact[i]=$var
+				let i=i+1
+			done
+			
+			for((i=0;i<${#ano[@]};i++))
+			do
+				if [ ${fact[i]} == "c" ]
+				then
+					echo "*****restore file: "${ano[i]}" in "${floc[i]}
+					cp ${ano[i]} -f ${floc[i]}
+				else
+					echo "*****delete file: "${ano[i]}" in "${floc[i]}
+					rm -f ${floc[i]}${ano[i]}
+				fi
+			done
+		fi	
+
 		cd $vdsm
 		if [ $chkbranch == "yes" ]
 		then
@@ -219,10 +219,7 @@ fi
 
 cd /root
 read -p "Where to put .tar.gz?: " rpm
-if [[ $rpm != */ ]]
-then
-	rpm=$rpm"/"
-fi
+rpm=$(end_with_slash $rpm)
 
 tar czvf $rpm"v"$version".tar.gz" rpmbuild/RPMS/
 
