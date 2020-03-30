@@ -1,6 +1,7 @@
 #!/bin/bash
 
-
+#"https://stackoverflow.com/questions/15858766/tilde-expansion-in-quotes"
+#Thanks Jonathan Leffler
 expand_tilde(){
 
 	case "$1" in
