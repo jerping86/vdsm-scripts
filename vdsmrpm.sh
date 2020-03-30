@@ -9,12 +9,16 @@ end_with_slash(){
 	echo $dummy
 }
 
-read -p "Entering working dir for storing temp stuffs: " wd
+read -e -p "Entering working dir for storing temp stuffs: " wd
+wd=${wd/#~/$HOME}
 while [ ! -d $wd ]
 do
-	read -p $wd" doesn't exist, please input some real folder: " wd
+	read -e -p $wd" doesn't exist, please input some real folder: " wd
+	wd=${wd/#~/$HOME}
 done
 
+echo "cd...ing..."
+sleep 2s
 cd $wd
 echo "***Working dir***: `pwd`"
 wd=$(end_with_slash $wd)
@@ -28,29 +32,9 @@ cd $proj
 
 ls
 read -p "Which version do your work applied on: " version
-cd vdsm-$version
-echo "***Currently in: `pwd`"
 
-
-file_replaced=$(cat position.txt | awk '//{print $1}')
-file_location=$(cat position.txt | awk '//{print $2}')
-
-i=0
-for var in ${file_replaced[@]}
-do
-	arr[i]=$var
-	let i=i+1
-done
-
-i=0
-for var in ${file_location[@]}
-do
-	loc[i]=$(end_with_slash $var)
-	echo ${loc[i]}
-	let i=i+1
-done
-
-read -p "Where is the main code repo: " vdsm
+read -e -p "Where is the main code repo: " vdsm
+vdsm=${vdsm/#~/$HOME}
 vdsm=$(end_with_slash $vdsm)
 echo $vdsm
 
@@ -87,21 +71,35 @@ esac
 
 
 cd $wd$proj"/vdsm-"$version 
+
+file_changed=($(awk '//{print $1}' position.txt))
+temp_vdsmdir=($(awk '//{print $2}' position.txt))
+
+i=0
+for var in ${temp_vdsmdir[@]}
+do
+	file_vdsmdir[i]=$(end_with_slash $var)
+	echo ${file_vdsmdir[i]}
+	let i=i+1
+done
+
 mkdir bak
 makechanges="no"
-for((i=0;i<${#arr[@]};i++))
+applied_cnt=0
+for((i=0;i<${#file_changed[@]};i++))
 do
-	read -p "cp ${arr[i]} to $vdsm${loc[i]}?[(y)apply,()skip]:" action
+	read -p "cp ${file_changed[i]} to $vdsm${file_vdsmdir[i]}?[(y)apply,()skip]:" action
 	case $action in
 		[yY]*)
-			if [ -f $vdsm${loc[i]}${arr[i]} ]
+			if [ -f $vdsm${file_vdsmdir[i]}${file_changed[i]} ]
 			then
-				cp $vdsm${loc[i]}${arr[i]} bak/
-				echo ${arr[i]}"   "$vdsm${loc[i]}"   c" >> bak/position.txt
+				cp $vdsm${file_vdsmdir[i]}${file_changed[i]} bak/
+				echo ${file_changed[i]}"   "$vdsm${file_vdsmdir[i]}"   c" >> bak/position.txt
 			else
-				echo ${arr[i]}"   "$vdsm${loc[i]}"   d" >> bak/position.txt
+				echo ${file_changed[i]}"   "$vdsm${file_vdsmdir[i]}"   d" >> bak/position.txt
 			fi
-			cp ${arr[i]} -f $vdsm${loc[i]}
+			cp ${file_changed[i]} -f $vdsm${file_vdsmdir[i]}
+			let applied_cnt=applied_cnt+1
 			makechanges="yes"
 			echo "ok";;
 		*)
@@ -109,6 +107,10 @@ do
 	esac 
 done
 
+echo "*****"$applied_cnt" changes."
+
+echo "cd...ing..."
+sleep 2s
 cd $vdsm
 echo "***Currently in: `pwd`"
 git status
@@ -123,40 +125,26 @@ case $commit in
 		if [ $makechanges == "yes" ]
 		then
 			cd $wd$proj"/vdsm-"$version"/bak/"
-			file_changed=$(cat position.txt | awk '//{print $1}')
-			file_locs=$(cat position.txt | awk '//{print $2}')
-			file_act=$(cat position.txt | awk '//{print $3}')
-			i=0
-			for var in ${file_changed[@]}
-			do
-				ano[i]=$var
-				let i=i+1
-			done
+			file_applied=($(awk '//{print $1}' position.txt))
+			temp_dir=($(awk '//{print $2}' position.txt))
+			file_moveact=($(awk '//{print $3}' position.txt))
 
 			i=0
-			for var in ${file_locs[@]}
+			for var in ${temp_dir[@]}
 			do
-				floc[i]=$var
-				floc[i]=$(end_with_slash ${floc[i]})
+				file_dir[i]=$(end_with_slash $var)
 				let i=i+1
 			done
 			
-			i=0
-			for var in ${file_act[@]}
+			for((i=0;i<${#file_applied[@]};i++))
 			do
-				fact[i]=$var
-				let i=i+1
-			done
-			
-			for((i=0;i<${#ano[@]};i++))
-			do
-				if [ ${fact[i]} == "c" ]
+				if [ ${file_moveact[i]} == "c" ]
 				then
-					echo "*****restore file: "${ano[i]}" in "${floc[i]}
-					cp ${ano[i]} -f ${floc[i]}
+					echo "*****restore file: "${file_applied[i]}" in "${file_dir[i]}
+					cp ${file_applied[i]} -f ${file_dir[i]}
 				else
-					echo "*****delete file: "${ano[i]}" in "${floc[i]}
-					rm -f ${floc[i]}${ano[i]}
+					echo "*****delete file: "${file_applied[i]}" in "${file_dir[i]}
+					rm -f ${file_dir[i]}${file_applied[i]}
 				fi
 			done
 		fi	
