@@ -1,5 +1,19 @@
 #!/bin/bash
 
+
+expand_tilde(){
+
+	case "$1" in
+	(\~)		echo "$HOME";;
+	(\~/*)		echo "$HOME/${1#\~/}";;
+	(\~[^/]*/*) 	local user=$(eval echo ${1%%/*})
+			echo "$user/${1#*/}";;
+	(\~[^/]*)	eval echo ${1};;
+	(*)		echo "$1";;
+	esac
+}
+
+
 end_with_slash(){
 	dummy=$1
 	if [[ $1 != */ ]]
@@ -10,17 +24,17 @@ end_with_slash(){
 }
 
 read -e -p "Entering working dir for storing temp stuffs: " wd
-wd=${wd/#~/$HOME}
+wd=$(expand_tilde $wd)
 while [ ! -d $wd ]
 do
 	read -e -p $wd" doesn't exist, please input some real folder: " wd
-	wd=${wd/#~/$HOME}
+	wd=$(expand_tilde $wd)
 done
 
 echo "cd...ing..."
-sleep 2s
+sleep 1s
 cd $wd
-echo "***Working dir***: `pwd`"
+echo "***We are in working dir***: `pwd`"
 wd=$(end_with_slash $wd)
 
 
@@ -34,7 +48,7 @@ ls
 read -p "Which version do your work applied on: " version
 
 read -e -p "Where is the main code repo: " vdsm
-vdsm=${vdsm/#~/$HOME}
+vdsm=$(expand_tilde $vdsm)
 vdsm=$(end_with_slash $vdsm)
 echo $vdsm
 
@@ -154,10 +168,14 @@ case $commit in
 		then
 			git checkout $oldbranch
 		fi
-		if [ $crtbranch == "yes" ]
-		then
-			git branch -D $bpre$version	
-		fi
+		read -p "We create an new branch,delete it?{[y]es,[]skip}" delbranch
+		case $delbranch in
+			y*)
+				git branch -D $bpre$version	
+				;;
+			*)
+				;;
+		esac
 		cd $wd
 		echo "we are in `pwd`"
 		echo "removing vdsm..."
@@ -205,13 +223,21 @@ fi
 
 if [ $crtbranch == "yes" ]
 then
-	git branch -D $bpre$version	
+	read -p "We create an new branch,delete it?{[y]es,[]skip}" delbranch
+	case $delbranch in
+		y*)
+			git branch -D $bpre$version	
+			;;
+		*)
+			;;
+	esac
 fi
 
 
 
 cd /root
-read -p "Where to put .tar.gz?: " rpm
+read -e -p "Where to put .tar.gz?: " rpm
+rpm=$(expand_tilde $rpm)
 rpm=$(end_with_slash $rpm)
 
 tar czvf $rpm"v"$version".tar.gz" rpmbuild/RPMS/
