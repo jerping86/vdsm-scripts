@@ -190,18 +190,19 @@ esac
 read -p "commit messages[one word]: " cmtmsg
 git commit -m $cmtmsg
 
-while true
-do
-	read -p "Add git ver number?[(y)apply,()skip]: " gitnum
-	case $gitnum in
-		[yY]*)
-			echo "hello,world" >> rpmmake.txt
-			git add rpmmake.txt
-			git commit -m "add git num";;
-		*)
-			break;;
-	esac
-done
+read -p "Add git ver number?[()skip]: " gitnum
+if [ ! -n "$gitnum" ];then
+	echo "skip"
+else
+	ij=0
+	while [ $ij -lt $gitnum ]
+	do
+		echo "hello,world" >> rpmmake.txt
+		git add rpmmake.txt
+		git commit -m "add git num"
+		let ij+=1
+	done
+fi
 
 make_rpm(){
 	git clean -xfd
